@@ -8,7 +8,6 @@ import javax.swing.text.StyleConstants;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.net.Socket;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.function.Consumer;
@@ -158,7 +157,7 @@ public class Chat {
 
     }
 
-    private void showMessage(String user, String msg, boolean fromSelf){
+    synchronized private void showMessage(String user, String msg, boolean fromSelf){
         SimpleAttributeSet att = new SimpleAttributeSet();
 //        StyleConstants.setFontFamily(att, "仿宋");
         StyleConstants.setFontSize(att,13);
@@ -217,9 +216,9 @@ public class Chat {
     public static void main(String[] args) throws Exception {
         String[] addr = args[0].split(":");
         String user = args[1];
-        Socket socket = new Socket(addr[0], Integer.parseInt(addr[1]));
-        MessageServiceTCPImpl msti = new MessageServiceTCPImpl(socket);
-        Chat chat = new Chat(user,msti);
+//        MessageService<Message> ms = new MessageServiceTCPImpl(addr[0],Integer.parseInt(addr[1]));
+        MessageService<Message> ms = new MessageServiceNIOImpl(addr[0], Integer.parseInt(addr[1]));
+        Chat chat = new Chat(user,ms);
         new Thread(chat::receiveMessage).start();
     }
 }

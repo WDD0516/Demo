@@ -6,6 +6,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.Scanner;
 import java.util.function.Consumer;
 
 public class NIOClient {
@@ -35,15 +38,57 @@ public class NIOClient {
     }
 
     public void receiveFromServer(Consumer<byte[]> processor) throws IOException {
-        IOEventDrivenManager manager = new IOEventDrivenManager();
-        manager.registerChannel(socketChannel, (buffer) -> {
-            // Process data in buffer...
-            byte[] byteArray = new byte[buffer.remaining()];
-            buffer.get(byteArray);
-            processor.accept(byteArray);
+        // Create a new selector
+        Selector selector = Selector.open();
+        // Create a new ByteBuffer as the attachment
+        socketChannel.register(selector, SelectionKey.OP_READ);
+        while(true) {
+            // Wait for events
+            int numKeys = selector.select();
+
+            if(numKeys > 0) {
+                // Retrieve keys that have events ready
+                Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
+
+                while(iter.hasNext()) {
+                    SelectionKey key = iter.next();
+
+                    if(key.isReadable()) {
+                        // The socket channel has data to be read
+                        SocketChannel client = (SocketChannel) key.channel();
+                        ByteBuffer buffer = ByteBuffer.allocate(256);
+                        buffer.clear();
+                        client.read(buffer);
+                        buffer.flip();
+                        // Process data in buffer...
+                        byte[] byteArray = new byte[buffer.remaining()];
+                        buffer.get(byteArray);
+                        processor.accept(byteArray);
+                    }
+
+                    iter.remove();
+                }
+            }
+        }
+    }
+
+    public static void main(String[] args) throws IOException, InterruptedException {
+        NIOClient nc = new NIOClient("localhost", 38888);
+        new Thread(() -> {
+            int i = 0;
+            while (true){
+                try {
+                    Thread.sleep(1000);
+                    i++;
+                    nc.sendToServer((i+"s later").getBytes());
+                } catch (InterruptedException | IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }).start();
+        nc.receiveFromServer(bytes -> {
+            System.out.println(new String(bytes));
         });
-        // Start processing events
-        manager.processEvents();
     }
 
 }

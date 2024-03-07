@@ -10,7 +10,8 @@ public class MessageServiceTCPImpl implements MessageService<Message>{
     ObjectOutputStream oos;
     ObjectInputStream ois;
 
-    public MessageServiceTCPImpl(Socket socket) throws IOException {
+    public MessageServiceTCPImpl(String hostname, int port) throws IOException {
+        Socket socket = new Socket(hostname,port);
         OutputStream os = socket.getOutputStream();
         InputStream is = socket.getInputStream();
         PrintWriter headWriter = new PrintWriter(os, true);

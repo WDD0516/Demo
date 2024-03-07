@@ -1,23 +1,25 @@
 package org.example.TCP.ui;
 
 import java.io.*;
+import java.util.Arrays;
 import java.util.function.Consumer;
 
-public class MessageServiceNIOImpl extends NIOClient implements MessageService<Message>{
+public class MessageServiceNIOImpl implements MessageService<Message>{
     ByteArrayOutputStream out;
     ObjectOutputStream os;
+    NIOClient nioClient;
     public MessageServiceNIOImpl(String hostname, int port) throws IOException, InterruptedException {
-        super(hostname, port);
         this.out = new ByteArrayOutputStream();
         this.os = new ObjectOutputStream(out);
-
+        this.nioClient = new NIOClient(hostname, port);
     }
 
     @Override
     public void send(Message msg) {
         try {
             this.os.writeObject(msg);
-            sendToServer(out.toByteArray());
+            byte[] bytes = out.toByteArray();
+            nioClient.sendToServer(bytes);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -26,7 +28,7 @@ public class MessageServiceNIOImpl extends NIOClient implements MessageService<M
     @Override
     public void receive(Consumer<Message> processor) {
         try {
-            receiveFromServer(bytes -> {
+            nioClient.receiveFromServer(bytes -> {
                 ByteArrayInputStream in = new ByteArrayInputStream(bytes);
                 try {
                     ObjectInputStream is = new ObjectInputStream(in);
