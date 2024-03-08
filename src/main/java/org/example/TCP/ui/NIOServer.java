@@ -51,12 +51,11 @@ public class NIOServer {
                         SocketChannel channel = (SocketChannel)key.channel();
                         ByteBuffer buffer = map.get(channel);
                         buffer.clear();
-                        channel.read(buffer);
+                        int bytesRead = channel.read(buffer);
                         for (SocketChannel sc : map.keySet()) {
-                            if (channel != sc) {
-                                buffer.flip();
-                                sc.write(buffer);
-                            }
+//                            if (channel != sc) {
+                                sc.write(ByteBuffer.wrap(buffer.array(),0,bytesRead));
+//                            }
                         }
 
 //                        if (read > 0){
